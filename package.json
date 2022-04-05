@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@gnosis.pm/mock-contract": "^4.0.0",
     "@openzeppelin/test-helpers": "^0.5.15",
     "bignumber.js": "^9.0.2",
     "chai": "^4.3.6",

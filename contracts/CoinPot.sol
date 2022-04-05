@@ -28,6 +28,14 @@ interface IERC20Token {
 }
 
 contract CoinPot {
+	address internal cUSDTokenAddress;
+	IERC20Token token;
+
+	constructor(address tokenAddress) public {
+		cUSDTokenAddress = tokenAddress;
+		token = IERC20Token(tokenAddress);
+	}
+
 	struct Lock {
 		uint256 balance;
 		uint256 noOfDays;
@@ -43,6 +51,10 @@ contract CoinPot {
 		require(
 			coinLocks[msg.sender].balance == 0,
 			"current lock has not been cleared"
+		);
+		require(
+			token.transferFrom(msg.sender, address(this), amount),
+			"Transfer failed"
 		);
 
 		uint256 createdAt = block.timestamp;
