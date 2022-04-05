@@ -26,7 +26,7 @@ contract("CoinPot", async (accounts) => {
       coinPotInstance = await CoinPot.new(mock.address);
     });
 
-    contract("should create a new coin lock and retrieve it", (accounts) => {
+    contract("should create a new lock and retrieve it", (accounts) => {
       before(async () => {
         mock = await MockContract.new();
         coinPotInstance = await CoinPot.new(mock.address);
@@ -72,7 +72,7 @@ contract("CoinPot", async (accounts) => {
       });
     });
 
-    it("should fail to create coin lock while sender sender lock is not cleared", async () => {
+    it("should fail to create coin lock while current sender lock is not cleared", async () => {
       const amount = 1130;
       const days = 131;
 
@@ -81,18 +81,18 @@ contract("CoinPot", async (accounts) => {
         from: accounts[0],
       });
 
-      const errMessage = /(.*)?current lock has not been cleared(.*)?/;
+      const errMsg = "current lock has not been cleared";
 
       await expectRevert(
         coinPotInstance.newLock(amount, days, {
           from: accounts[0],
         }),
-        errMessage
+        errMsg
       );
     });
 
     it("should fail to create coin lock with zero amount", async () => {
-      const errMessage = /(.*)?amount has to be greater than zero(.*)?/;
+      const errMsg = "amount has to be greater than zero";
 
       const amount = 0;
       const days = 1;
@@ -101,40 +101,29 @@ contract("CoinPot", async (accounts) => {
         coinPotInstance.newLock(amount, days, {
           from: accounts[0],
         }),
-        errMessage
-      );
-    });
-
-    it("should fail to create coin lock with zero days", async () => {
-      const errMessage = /(.*)?days has to be greater than zero(.*)?/;
-
-      const amount = 1;
-      const days = 0;
-
-      await expectRevert(
-        coinPotInstance.newLock(amount, days, {
-          from: accounts[0],
-        }),
-        errMessage
+        errMsg
       );
     });
   });
 
-  contract.only("func: withdrawFromLock", () => {
+  contract("func: withdrawFromLock", () => {
     before(async () => {
       mock = await MockContract.new();
-      coinPotInstance = await CoinPot.new(mock.address);
       token = await Token.at(mock.address);
     });
 
-    it("should withdraw from active lock", async () => {
+    beforeEach(async () => {
+      coinPotInstance = await CoinPot.new(mock.address);
+      await mock.givenAnyReturnBool(true);
+    });
+
+    it("should withdraw from completed lock", async () => {
       const amount = 1000;
-      const days = 131;
+      const days = 0;
       const withdrawAmount = 30;
       const from = accounts[0];
 
       // create lock
-      await mock.givenAnyReturnBool(true);
       await coinPotInstance.newLock(amount, days, {
         from,
       });
@@ -169,6 +158,34 @@ contract("CoinPot", async (accounts) => {
         `expected ${expectedBalance} balance got ${resultingLock[0].toNumber()}`
       );
     });
+
+    it("should fail to withdraw from empty lock", async () => {
+      const from = accounts[0];
+      const errMsg = "cannot withdraw from empty lock";
+
+      await expectRevert(
+        coinPotInstance.withdrawFromLock(100, {
+          from,
+        }),
+        errMsg
+      );
+    });
+
+    it("should fail to withdraw before unlock date", async () => {
+      const from = accounts[0];
+      const errMsg = "cannot withdraw before unlock date";
+
+      await coinPotInstance.newLock(100, 100, {
+        from,
+      });
+
+      await expectRevert(
+        coinPotInstance.withdrawFromLock(100, {
+          from,
+        }),
+        errMsg
+      );
+    });
   });
 });
 
@@ -179,5 +196,21 @@ const convertBigNumberValues = (obj, keys) => {
 };
 
 const expectRevert = async (promise, errMsg) => {
-  await expect(promise).to.eventually.be.rejectedWith(errMsg);
+  let error;
+
+  try {
+    await promise;
+  } catch (err) {
+    error = err;
+  } finally {
+    if (!error) {
+      expect.fail("transaction failed to revert");
+      return;
+    }
+
+    expect(error.message).to.have.string(
+      "Reason given: " + errMsg,
+      `expected "${error.message}" to contain "Reason given: ${errMsg}"\n\n`
+    );
+  }
 };

@@ -24,7 +24,6 @@ contract CoinPot {
 
 	function newLock(uint256 amount, uint256 lockDays) public {
 		require(amount > 0, "amount has to be greater than zero");
-		require(lockDays > 0, "lock days has to be greater than zero");
 		require(
 			coinLocks[msg.sender].balance == 0,
 			"current lock has not been cleared"
@@ -59,6 +58,13 @@ contract CoinPot {
 	}
 
 	function withdrawFromLock(uint256 amount) public {
+		Lock memory activeLock = coinLocks[msg.sender];
+
+		require(activeLock.balance > 0, "cannot withdraw from empty lock");
+		require(
+			block.timestamp >= activeLock.unlockDate,
+			"cannot withdraw before unlock date"
+		);
 		require(
 			token.transferFrom(address(this), msg.sender, amount),
 			"Transfer failed"
