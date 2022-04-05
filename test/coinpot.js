@@ -10,6 +10,13 @@ const CoinPot = artifacts.require("./CoinPot.sol");
 const MockContract = artifacts.require("./MockContract.sol");
 const Token = artifacts.require("./IERC20Token.sol");
 
+const errors = {
+  lockNotCleared: "current lock has not been cleared",
+  amountNotAboveZero: "amount has to be greater than zero",
+  withdrawFromEmptyLock: "cannot withdraw from empty lock",
+  beforeUnlockDate: "cannot withdraw before unlock date",
+};
+
 contract("CoinPot", async (accounts) => {
   let coinPotInstance;
   let mock;
@@ -81,19 +88,15 @@ contract("CoinPot", async (accounts) => {
         from: accounts[0],
       });
 
-      const errMsg = "current lock has not been cleared";
-
       await expectRevert(
         coinPotInstance.newLock(amount, days, {
           from: accounts[0],
         }),
-        errMsg
+        errors.lockNotCleared
       );
     });
 
     it("should fail to create coin lock with zero amount", async () => {
-      const errMsg = "amount has to be greater than zero";
-
       const amount = 0;
       const days = 1;
 
@@ -101,7 +104,7 @@ contract("CoinPot", async (accounts) => {
         coinPotInstance.newLock(amount, days, {
           from: accounts[0],
         }),
-        errMsg
+        errors.amountNotAboveZero
       );
     });
   });
@@ -161,19 +164,17 @@ contract("CoinPot", async (accounts) => {
 
     it("should fail to withdraw from empty lock", async () => {
       const from = accounts[0];
-      const errMsg = "cannot withdraw from empty lock";
 
       await expectRevert(
         coinPotInstance.withdrawFromLock(100, {
           from,
         }),
-        errMsg
+        errors.withdrawFromEmptyLock
       );
     });
 
     it("should fail to withdraw before unlock date", async () => {
       const from = accounts[0];
-      const errMsg = "cannot withdraw before unlock date";
 
       await coinPotInstance.newLock(100, 100, {
         from,
@@ -183,7 +184,7 @@ contract("CoinPot", async (accounts) => {
         coinPotInstance.withdrawFromLock(100, {
           from,
         }),
-        errMsg
+        errors.beforeUnlockDate
       );
     });
   });
