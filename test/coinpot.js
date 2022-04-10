@@ -288,58 +288,86 @@ contract("CoinPot", async (accounts) => {
     });
   });
 
-  describe.only("func: runLottery", () => {
+  describe("func: runLottery", () => {
     beforeEach(async () => {
       coinPotInstance = await CoinPot.new(mock.address);
       await mock.givenAnyReturnBool(true);
     });
 
     it("should award pot to a random user with an active lock on or after next lottery date", async () => {
-      const users = [...accounts.slice(0, 3)];
-      const depositAmount = 100;
-      const days = 100;
-      const withdrawAmount = depositAmount / 2;
+      const winners = [];
+      const noOfUsers = 5;
 
-      // create active locks for small group of users
-      // and make early withdraws to create pot donations
-      for await (const from of users) {
-        await coinPotInstance.newLock(depositAmount, days, {
-          from,
-        });
+      for await (const _ of new Array(noOfUsers)) {
+        coinPotInstance = await CoinPot.new(mock.address);
 
-        await coinPotInstance.withdrawFromLock(withdrawAmount, { from });
+        const users = [...accounts.slice(0, noOfUsers)];
+        const depositAmount = 100;
+        const days = 100;
+        const withdrawAmount = depositAmount / 2;
+
+        // create active locks for small group of users
+        // and make early withdraws to create pot donations
+        for await (const from of users) {
+          await coinPotInstance.newLock(depositAmount, days, {
+            from,
+          });
+
+          await coinPotInstance.withdrawFromLock(withdrawAmount, { from });
+        }
+
+        await coinPotInstance.runLottery();
+
+        const { addresses } = await coinPotInstance.getLotteryWinners();
+        const [lotteryWinner] = addresses;
+
+        assert.include(
+          users,
+          lotteryWinner,
+          `expected winner address to be one of "${users}", got address ${lotteryWinner}\n\n`
+        );
+        await assertWinnerGotPotBalance(
+          coinPotInstance,
+          lotteryWinner,
+          depositAmount,
+          withdrawAmount,
+          users.length
+        );
+
+        winners.push(lotteryWinner);
       }
 
-      await coinPotInstance.runLottery();
-
-      const { addresses } = await coinPotInstance.getLotteryWinners();
-      const [lotteryWinner] = addresses;
-
-      assert.include(
-        users,
-        lotteryWinner,
-        `expected winner address to be one of "${users}", got address ${lotteryWinner}\n\n`
-      );
-
-      const percentageTax = 0.05; // 5%
-      const earlyWithdrawTax = Math.floor(withdrawAmount * percentageTax);
-      const potAmount = Math.round(earlyWithdrawTax) * users.length;
-
-      const [winnerLock, pot] = await Promise.all([
-        coinPotInstance.getActiveLock({
-          from: lotteryWinner,
-        }),
-        coinPotInstance.getPot(),
-      ]);
-
-      assertBalance(
-        winnerLock.balance.toNumber(),
-        depositAmount - withdrawAmount - earlyWithdrawTax + potAmount
-      );
-      assertPotBalance(pot.balance.toNumber(), 0);
+      const uniqueWinners = new Set(winners);
+      if (uniqueWinners.size === 1)
+        assert.fail("expected different winners but only got one");
     });
   });
 });
+
+const assertWinnerGotPotBalance = async (
+  coinPotInstance,
+  lotteryWinner,
+  depositAmount,
+  withdrawAmount,
+  noOfUsers
+) => {
+  const percentageTax = 0.05; // 5%
+  const earlyWithdrawTax = Math.floor(withdrawAmount * percentageTax);
+  const potAmount = Math.round(earlyWithdrawTax) * noOfUsers;
+
+  const [winnerLock, pot] = await Promise.all([
+    coinPotInstance.getActiveLock({
+      from: lotteryWinner,
+    }),
+    coinPotInstance.getPot(),
+  ]);
+
+  assertBalance(
+    winnerLock.balance.toNumber(),
+    depositAmount - withdrawAmount - earlyWithdrawTax + potAmount
+  );
+  assertPotBalance(pot.balance.toNumber(), 0);
+};
 
 const assertPotBalance = (got, want) => {
   assert.equal(got, want, `expected ${want} in pot, got ${got}`);

@@ -24,6 +24,11 @@ struct Winner {
 	uint256 amount;
 }
 
+struct Set {
+	address[] values;
+	mapping(address => bool) isIn;
+}
+
 contract CoinPot {
 	IERC20Token token;
 	Pot pot;
@@ -31,12 +36,19 @@ contract CoinPot {
 
 	address internal cUSDTokenAddress;
 	mapping(address => Lock) internal coinLocks;
-	address[] owners;
+	Set owners;
 
 	constructor(address tokenAddress) public {
 		cUSDTokenAddress = tokenAddress;
 		token = IERC20Token(tokenAddress);
 		pot = Pot(0, block.timestamp, 7, 5);
+	}
+
+	function addOwner(address ownerAddress) internal {
+		if (!owners.isIn[ownerAddress]) {
+			owners.values.push(ownerAddress);
+			owners.isIn[ownerAddress] = true;
+		}
 	}
 
 	function getPot()
@@ -71,7 +83,7 @@ contract CoinPot {
 		uint256 createdAt = block.timestamp;
 		uint256 unlockDate = createdAt + (1 days * lockDays);
 
-		owners.push(msg.sender);
+		addOwner(msg.sender);
 		coinLocks[msg.sender] = Lock(amount, lockDays, createdAt, unlockDate);
 	}
 
@@ -139,8 +151,26 @@ contract CoinPot {
 	}
 
 	function runLottery() public {
-		coinLocks[owners[0]].balance += pot.balance;
-		winners.push(Winner(block.timestamp, owners[0], pot.balance));
+		address[] memory possibleWinners = new address[](owners.values.length);
+		uint256 noOfPossibleWinners;
+
+		for (uint256 i = 0; i < owners.values.length; i++) {
+			address owner = owners.values[i];
+
+			if (coinLocks[owner].unlockDate > block.timestamp) {
+				possibleWinners[noOfPossibleWinners] = owner;
+				noOfPossibleWinners++;
+			}
+		}
+
+		// todo: more secure random number generation
+		uint256 winnerIndex = uint256(
+			keccak256(abi.encodePacked(block.timestamp, msg.sender))
+		) % noOfPossibleWinners;
+		address winner = possibleWinners[winnerIndex];
+
+		coinLocks[winner].balance += pot.balance;
+		winners.push(Winner(block.timestamp, winner, pot.balance));
 		pot.balance = 0;
 	}
 
