@@ -4,25 +4,60 @@ pragma solidity >=0.4.21 <8.10.0;
 
 import "./IERC20Token.sol";
 
+struct Pot {
+	uint256 balance;
+	uint256 lastLotteryDate;
+	uint16 daysBetweenLottery;
+	uint256 percentageTax;
+}
+
+struct Lock {
+	uint256 balance;
+	uint256 noOfDays;
+	uint256 createdAt;
+	uint256 unlockDate;
+}
+
+struct Winner {
+	uint256 timestamp;
+	address winnerAddress;
+	uint256 amount;
+}
+
 contract CoinPot {
-	address internal cUSDTokenAddress;
 	IERC20Token token;
+	Pot pot;
+	Winner[] winners;
+
+	address internal cUSDTokenAddress;
+	mapping(address => Lock) internal coinLocks;
+	address[] owners;
 
 	constructor(address tokenAddress) public {
 		cUSDTokenAddress = tokenAddress;
 		token = IERC20Token(tokenAddress);
+		pot = Pot(0, block.timestamp, 7, 5);
 	}
 
-	struct Lock {
-		uint256 balance;
-		uint256 noOfDays;
-		uint256 createdAt;
-		uint256 unlockDate;
+	function getPot()
+		public
+		view
+		returns (
+			uint256 balance,
+			uint256 lastLotteryDate,
+			uint16 daysBetweenLottery,
+			uint256 percentageTax
+		)
+	{
+		return (
+			pot.balance,
+			pot.lastLotteryDate,
+			pot.daysBetweenLottery,
+			pot.percentageTax
+		);
 	}
 
-	mapping(address => Lock) internal coinLocks;
-
-	function newLock(uint256 amount, uint256 lockDays) public {
+	function newLock(uint256 amount, uint256 lockDays) public payable {
 		require(amount > 0, "amount has to be greater than zero");
 		require(
 			coinLocks[msg.sender].balance == 0,
@@ -36,6 +71,7 @@ contract CoinPot {
 		uint256 createdAt = block.timestamp;
 		uint256 unlockDate = createdAt + (1 days * lockDays);
 
+		owners.push(msg.sender);
 		coinLocks[msg.sender] = Lock(amount, lockDays, createdAt, unlockDate);
 	}
 
@@ -62,14 +98,75 @@ contract CoinPot {
 
 		require(activeLock.balance > 0, "cannot withdraw from empty lock");
 		require(
-			block.timestamp >= activeLock.unlockDate,
-			"cannot withdraw before unlock date"
+			amount <= activeLock.balance,
+			"balance must be greater than amount"
 		);
+
+		bool isEarlyWithdraw = block.timestamp < activeLock.unlockDate;
+
+		if (isEarlyWithdraw) {
+			uint256 potDeposit = (amount * pot.percentageTax) / 100;
+
+			require(
+				(amount + potDeposit) <= activeLock.balance,
+				"balance must be greater than amount plus tax"
+			);
+
+			coinLocks[msg.sender].balance -= amount + potDeposit;
+			pot.balance += potDeposit;
+		} else {
+			coinLocks[msg.sender].balance -= amount;
+		}
+
 		require(
 			token.transferFrom(address(this), msg.sender, amount),
 			"Transfer failed"
 		);
+	}
 
-		coinLocks[msg.sender].balance -= amount;
+	function depositInLock(uint256 amount) public payable {
+		require(amount > 0, "amount has to be greater than zero");
+		require(
+			coinLocks[msg.sender].unlockDate > block.timestamp,
+			"sender does not have active lock"
+		);
+		require(
+			token.transferFrom(msg.sender, address(this), amount),
+			"Transfer failed"
+		);
+
+		coinLocks[msg.sender].balance += amount;
+	}
+
+	function runLottery() public {
+		coinLocks[owners[0]].balance += pot.balance;
+		winners.push(Winner(block.timestamp, owners[0], pot.balance));
+		pot.balance = 0;
+	}
+
+	function getLotteryWinners()
+		public
+		view
+		returns (
+			address[5] memory addresses,
+			uint256[5] memory amounts,
+			uint256[5] memory timestamps
+		)
+	{
+		uint256 counter = 1;
+
+		while (
+			counter < 6 && winners.length != 0 && counter <= winners.length
+		) {
+			uint256 i = winners.length - counter;
+
+			addresses[counter - 1] = winners[i].winnerAddress;
+			amounts[counter - 1] = winners[i].amount;
+			timestamps[counter - 1] = winners[i].timestamp;
+
+			counter++;
+		}
+
+		return (addresses, amounts, timestamps);
 	}
 }
