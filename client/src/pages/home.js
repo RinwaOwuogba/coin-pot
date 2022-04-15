@@ -192,15 +192,15 @@ const Home = ({ data, cUSDBalance }) => {
                   : 'Inactive lock balance'}
               </Text>
               <Text fontSize="5xl" mb="10">
+                $
                 {new BigNumber(activeLockQuery.data.balance)
                   .shiftedBy(-ERC20_DECIMALS)
                   .toFixed(2)}{' '}
-                cUSD
               </Text>
 
               {activeLockQuery.data.isActive ? (
                 <>
-                  <Flex flexWrap="wrap">
+                  <Flex flexWrap="wrap" mb="3">
                     <Button
                       colorScheme="orange"
                       onClick={withdrawDisclosure.onOpen}
@@ -217,13 +217,7 @@ const Home = ({ data, cUSDBalance }) => {
                       Deposit in lock
                     </Button>
                   </Flex>
-                  <Text
-                    mb="3"
-                    bg="gray.200"
-                    borderRadius="md"
-                    p="3"
-                    fontSize="sm"
-                  >
+                  <Text bg="gray.200" borderRadius="md" p="3" fontSize="sm">
                     Coins are locked till{' '}
                     <Text as="span" fontWeight="bold">
                       {new Date(activeLockQuery.data.unlockDate).toString()}
@@ -232,7 +226,7 @@ const Home = ({ data, cUSDBalance }) => {
                 </>
               ) : (
                 <>
-                  <Flex flexWrap="wrap">
+                  <Flex flexWrap="wrap" mb="3">
                     <Button
                       colorScheme="orange"
                       onClick={withdrawDisclosure.onOpen}

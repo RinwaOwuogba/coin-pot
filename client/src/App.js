@@ -8,6 +8,7 @@ import coinpot from './contracts/CoinPot.json';
 import Home from './pages/home';
 import { CPContractAddress, ERC20_DECIMALS } from './constants';
 import { useQuery } from 'react-query';
+import Lottery from './pages/lottery';
 
 function App() {
   const toast = useToast();
@@ -105,6 +106,16 @@ function App() {
   return (
     <>
       <Routes>
+        <Route
+          path="/lottery"
+          element={
+            <Lottery
+              data={data}
+              cUSDBalance={cUSDBalanceQuery.data}
+              setData={setData}
+            />
+          }
+        />
         <Route
           path="/"
           element={
