@@ -2,7 +2,7 @@ import { Button, Flex, Text, VStack } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import { ERC20_DECIMALS } from '../constants';
 
-const LotteryDetails = ({ data, onRunLottery }) => {
+const LotteryDetails = ({ data, onRunLottery, isLoading }) => {
   const { balance, dueForNextRun, lastLotteryDate, nextRunDate } = data;
 
   return (
@@ -27,7 +27,8 @@ const LotteryDetails = ({ data, onRunLottery }) => {
           colorScheme="green"
           variant="outline"
           disabled={dueForNextRun}
-          onClick={() => {}}
+          onClick={onRunLottery}
+          isLoading={isLoading}
           mr="5"
           mb="5"
         >

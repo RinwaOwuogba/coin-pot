@@ -1,29 +1,19 @@
-import {
-  Box,
-  Button,
-  Center,
-  Flex,
-  Spinner,
-  Text,
-  VStack,
-} from '@chakra-ui/react';
+import { Box, Center, Spinner, Text, useToast, VStack } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
-import { useQuery, useQueryClient } from 'react-query';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import Header from '../components/header';
 import LotteryDetails from '../components/lottery-details';
 import LotteryWinner from '../components/lottery-winner';
 import { ERC20_DECIMALS } from '../constants';
+import useSimpleToast from '../hooks/use-simple-toast';
 
 const Lottery = ({ data, cUSDBalance }) => {
   const { contract, kit } = data;
+  const simpleToast = useSimpleToast();
+  const toast = useToast();
 
   const queryClient = useQueryClient();
-  // return {
-  //   // isActive: true,
-  //   isActive: false,
-  //   balance: 100000000000000000,
-  //   unlockDate: new Date(),
-  // };
+
   const lotteryPotQuery = useQuery('lotteryPot', async () => {
     const result = await contract.methods.getPot().call();
 
@@ -31,7 +21,7 @@ const Lottery = ({ data, cUSDBalance }) => {
     result.nextRunDate = new Date(result.lastLotteryDate);
 
     result.nextRunDate.setDate(
-      result.lastLotteryDate.getDate() + result.daysBetweenLottery
+      result.lastLotteryDate.getDate() + Number(result.daysBetweenLottery)
     );
     result.dueForNextRun = result.nextRunDate > new Date();
 
@@ -43,23 +33,7 @@ const Lottery = ({ data, cUSDBalance }) => {
       .getLotteryWinners()
       .call();
 
-    const winners = [
-      //   {
-      //     address: '0x276539Fa1Eb16D44d622F2e0Ca25eeA172369bC1',
-      //     amount: '100',
-      //     timestamp: new Date(),
-      //   },
-      //   {
-      //     address: '0x898725Fa1Eb16D44d622F2e0Ca25eeA172369bC2',
-      //     amount: '100',
-      //     timestamp: new Date(),
-      //   },
-      //   {
-      //     address: '0x87406abcd3e16D44d622F2e0Ca25eeA172369bC3',
-      //     amount: '100',
-      //     timestamp: new Date(),
-      //   },
-    ];
+    const winners = [];
 
     for (let i = 0; i < addresses.length; i++) {
       const winner = {};
@@ -68,14 +42,44 @@ const Lottery = ({ data, cUSDBalance }) => {
       if (timestamps[i] == 0) continue;
 
       winner.address = addresses[i];
-      winner.amount = amounts[i];
-      winner.timestamp = timestamps[i];
+      winner.amount = new BigNumber(amounts[i])
+        .shiftedBy(-ERC20_DECIMALS)
+        .toString();
+      winner.timestamp = new Date(Number(timestamps[i]) * 1000);
 
       winners.push(winner);
     }
 
     return winners;
   });
+
+  const runLotteryMutation = useMutation(
+    () => {
+      simpleToast.info(`Attempting to start lottery...`);
+
+      return contract.methods.runLottery().send({ from: kit.defaultAccount });
+    },
+    {
+      onSuccess: () => {
+        simpleToast.success(
+          `Lottery completed! Check the updated list of winners`
+        );
+        queryClient.invalidateQueries('lotteryWinners');
+        queryClient.invalidateQueries('lotteryPot');
+      },
+      onError: error => {
+        console.error(error);
+        toast({
+          title: `Something went wrong while trying to run lottery`,
+          description: error.message,
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+          position: 'top-right',
+        });
+      },
+    }
+  );
 
   return (
     <>
@@ -99,7 +103,11 @@ const Lottery = ({ data, cUSDBalance }) => {
         ) : null}
 
         {lotteryPotQuery.status === 'success' ? (
-          <LotteryDetails data={lotteryPotQuery.data} onRunLottery={() => {}} />
+          <LotteryDetails
+            data={lotteryPotQuery.data}
+            onRunLottery={runLotteryMutation.mutate}
+            isLoading={runLotteryMutation.isLoading}
+          />
         ) : null}
 
         {lotteryWinnersQuery.status === 'loading' ? (
