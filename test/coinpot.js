@@ -124,7 +124,7 @@ contract("CoinPot", async (accounts) => {
     });
   });
 
-  describe.only("func: withdrawFromLock", () => {
+  describe("func: withdrawFromLock", () => {
     beforeEach(async () => {
       coinPotInstance = await CoinPot.new(mock.address);
       await mock.givenAnyReturnBool(true);

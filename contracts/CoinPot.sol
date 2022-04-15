@@ -24,11 +24,6 @@ struct Winner {
 	uint256 amount;
 }
 
-struct Set {
-	address[] values;
-	mapping(address => bool) isIn;
-}
-
 contract CoinPot {
 	IERC20Token token;
 	Pot pot;
@@ -36,7 +31,7 @@ contract CoinPot {
 
 	address internal cUSDTokenAddress;
 	mapping(address => Lock) internal coinLocks;
-	Set owners;
+	address[] owners;
 
 	constructor(address tokenAddress) public {
 		cUSDTokenAddress = tokenAddress;
@@ -44,10 +39,9 @@ contract CoinPot {
 		pot = Pot(0, block.timestamp, 7, 5);
 	}
 
-	function addOwner(address ownerAddress) internal {
-		if (!owners.isIn[ownerAddress]) {
-			owners.values.push(ownerAddress);
-			owners.isIn[ownerAddress] = true;
+	function addLockOwner(address ownerAddress) internal {
+		if (coinLocks[ownerAddress].createdAt == 0) {
+			owners.push(ownerAddress);
 		}
 	}
 
@@ -83,7 +77,7 @@ contract CoinPot {
 		uint256 createdAt = block.timestamp;
 		uint256 unlockDate = createdAt + (1 days * lockDays);
 
-		addOwner(msg.sender);
+		addLockOwner(msg.sender);
 		coinLocks[msg.sender] = Lock(amount, lockDays, createdAt, unlockDate);
 	}
 
@@ -130,10 +124,7 @@ contract CoinPot {
 			coinLocks[msg.sender].balance -= amount;
 		}
 
-		require(
-			token.transfer(msg.sender, amount),
-			"Transfer failed"
-		);
+		require(token.transfer(msg.sender, amount), "Transfer failed");
 	}
 
 	function depositInLock(uint256 amount) public payable {
@@ -151,11 +142,11 @@ contract CoinPot {
 	}
 
 	function runLottery() public {
-		address[] memory possibleWinners = new address[](owners.values.length);
+		address[] memory possibleWinners = new address[](owners.length);
 		uint256 noOfPossibleWinners;
 
-		for (uint256 i = 0; i < owners.values.length; i++) {
-			address owner = owners.values[i];
+		for (uint256 i = 0; i < owners.length; i++) {
+			address owner = owners[i];
 
 			if (coinLocks[owner].unlockDate > block.timestamp) {
 				possibleWinners[noOfPossibleWinners] = owner;
