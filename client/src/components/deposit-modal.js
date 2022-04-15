@@ -20,17 +20,12 @@ const DepositModal = ({ isOpen, onClose, onSubmit, register, unlockDate }) => {
         <ModalHeader>Deposit in lock</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text mb="3">
-            Coins have been locked till{' '}
-            <Text fontWeight="bold">{new Date(unlockDate).toString()}</Text>
-          </Text>
-
-          <Text mb="7">You can add more coins to active lock.</Text>
+          <Text mb="7">Add more coins to lock.</Text>
 
           <form onSubmit={onSubmit}>
             <VStack spacing="5">
               <Input
-                placeholder="Amount to withdraw"
+                placeholder="Amount to deposit"
                 name="amount"
                 type="number"
                 {...register('amount')}

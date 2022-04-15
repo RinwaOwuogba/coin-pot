@@ -1,18 +1,13 @@
 import { useEffect, useState } from 'react';
 import Web3 from 'web3';
 import { newKitFromWeb3 } from '@celo/contractkit';
-import BigNumber from 'bignumber.js';
 import { Route, Routes } from 'react-router-dom';
 import { useToast, Center, Spinner } from '@chakra-ui/react';
 
 import coinpot from './contracts/CoinPot.json';
-import erc20 from './contracts/IERC20Token.json';
-import Header from './components/header';
 import Home from './pages/home';
-
-const ERC20_DECIMALS = 18;
-const CPContractAddress = '0x2B5e641d834c701c6bc088ca65b36eD7Eb8Fe096';
-const cUSDContractAddress = '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1';
+import { CPContractAddress, ERC20_DECIMALS } from './constants';
+import { useQuery } from 'react-query';
 
 function App() {
   const toast = useToast();
@@ -20,7 +15,18 @@ function App() {
     kit: null,
     contract: null,
     connecting: null,
-    cUSDBalance: '',
+  });
+  const cUSDBalanceQuery = useQuery(['cUSDBalance', !!data.kit], async () => {
+    const { kit } = data;
+
+    if (kit) {
+      const totalBalance = await kit.getTotalBalance(kit.defaultAccount);
+      totalBalance.cUSD.shiftedBy(-ERC20_DECIMALS).toFixed(2);
+
+      return totalBalance.cUSD.shiftedBy(-ERC20_DECIMALS).toFixed(2);
+    }
+
+    return null;
   });
 
   const connectCeloWallet = async function () {
@@ -72,28 +78,18 @@ function App() {
     }
   };
 
-  const getBalance = async function (kit) {
-    const totalBalance = await kit.getTotalBalance(kit.defaultAccount);
-    totalBalance.cUSD.shiftedBy(-ERC20_DECIMALS).toFixed(2);
-
-    return totalBalance.cUSD.shiftedBy(-ERC20_DECIMALS).toFixed(2);
-  };
-
   useEffect(() => {
     const initApp = async () => {
       const { kit, contract } = await connectCeloWallet();
-      const cUSDBalance = await getBalance(kit);
 
       setData({
         kit,
         contract,
-        cUSDBalance,
       });
     };
 
     if (!window.initApp) {
       window.initApp = true;
-
       initApp();
     }
   }, []);
@@ -109,7 +105,16 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Home data={data} setData={setData} />} />
+        <Route
+          path="/"
+          element={
+            <Home
+              data={data}
+              cUSDBalance={cUSDBalanceQuery.data}
+              setData={setData}
+            />
+          }
+        />
       </Routes>
     </>
   );

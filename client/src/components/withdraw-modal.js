@@ -20,11 +20,6 @@ const WithdrawModal = ({ isOpen, onClose, onSubmit, register, unlockDate }) => {
         <ModalHeader>Withdraw from coin lock</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text mb="3">
-            Coins have been locked till{' '}
-            <Text fontWeight="bold">{new Date(unlockDate).toString()}</Text>
-          </Text>
-
           <Text mb="7">
             Note that early withdrawal attracts a fee of 5% which goes into the
             lottery pot.

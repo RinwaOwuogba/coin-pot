@@ -20,7 +20,7 @@ const Header = ({ balance }) => {
         borderColor="gray.400"
         fontWeight="medium"
       >
-        {balance}
+        {balance} cUSD
       </Text>
     </Flex>
   );

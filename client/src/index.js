@@ -18,7 +18,13 @@ import theme from './theme';
 
 const container = document.getElementById('root');
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 ReactDOM.render(
   <StrictMode>

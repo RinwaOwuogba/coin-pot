@@ -28,13 +28,14 @@ import NewLockModal from '../components/new-lock-modal';
 import WithdrawModal from '../components/withdraw-modal';
 import DepositModal from '../components/deposit-modal';
 
-const Home = ({ data }) => {
+const Home = ({ data, cUSDBalance }) => {
   const { contract, kit } = data;
 
   const queryClient = useQueryClient();
   const activeLockQuery = useQuery('activeLock', async () => {
     // return {
-    //   isActive: true,
+    //   // isActive: true,
+    //   isActive: false,
     //   balance: 100000000000000000,
     //   unlockDate: new Date(),
     // };
@@ -60,9 +61,12 @@ const Home = ({ data }) => {
   const withdrawForm = useForm();
   const depositForm = useForm();
 
-  const onSubmit = async data => {
-    console.log(data);
+  const refreshBalances = () => {
+    queryClient.invalidateQueries(['cUSDBalance']);
+    queryClient.invalidateQueries(['activeLock']);
+  };
 
+  const onNewLock = async data => {
     const { amount, days } = data;
     const shiftedAmount = new BigNumber(amount)
       .shiftedBy(ERC20_DECIMALS)
@@ -77,7 +81,7 @@ const Home = ({ data }) => {
       simpleToast.error(error.message);
     }
 
-    simpleToast.info(`Awaiting deposit of ${amount}`);
+    simpleToast.info(`Awaiting deposit of $${amount}`);
 
     try {
       await contract.methods
@@ -88,7 +92,9 @@ const Home = ({ data }) => {
         `You successfully created a ${days} day(s) lock for $${amount}`
       );
 
-      queryClient.invalidateQueries('activeLock');
+      refreshBalances();
+      newLockDisclosure.onClose();
+      newLockForm.reset();
     } catch (error) {
       console.error(error);
       simpleToast.error(error.message);
@@ -96,12 +102,10 @@ const Home = ({ data }) => {
   };
 
   const onWithdraw = async data => {
-    console.log(data);
-
     const { amount } = data;
     const shiftedAmount = new BigNumber(amount)
       .shiftedBy(ERC20_DECIMALS)
-      .toString();
+      .toFixed();
 
     simpleToast.info(`Attempting withdraw of $${amount}`);
 
@@ -114,8 +118,9 @@ const Home = ({ data }) => {
         `You successfully withdrawn $${amount} from your lock`
       );
 
-      queryClient.invalidateQueries('activeLock');
+      refreshBalances();
       withdrawDisclosure.onClose();
+      withdrawForm.reset();
     } catch (error) {
       console.error(error);
       simpleToast.error(error.message);
@@ -123,8 +128,6 @@ const Home = ({ data }) => {
   };
 
   const onDeposit = async data => {
-    console.log(data);
-
     const { amount } = data;
     const shiftedAmount = new BigNumber(amount)
       .shiftedBy(ERC20_DECIMALS)
@@ -150,8 +153,9 @@ const Home = ({ data }) => {
         `You successfully deposited $${amount} into your lock`
       );
 
-      queryClient.invalidateQueries('activeLock');
-      withdrawDisclosure.onClose();
+      refreshBalances();
+      depositDisclosure.onClose();
+      depositForm.reset();
     } catch (error) {
       console.error(error);
       simpleToast.error(error.message);
@@ -160,7 +164,7 @@ const Home = ({ data }) => {
 
   return (
     <>
-      <Header balance={data.cUSDBalance} />
+      <Header balance={cUSDBalance} />
 
       <Box padding="4">
         <Text fontSize="2xl" fontWeight="medium">
@@ -181,51 +185,85 @@ const Home = ({ data }) => {
 
         {activeLockQuery.status === 'success' ? (
           <Flex mt="10" justifyContent="center" mx="5">
-            {activeLockQuery.data.isActive &&
-            activeLockQuery.data.balance > 0 ? (
-              <Flex flexDir="column" alignItems="center">
-                <Text fontSize="lg" fontWeight="bold">
-                  Active lock:
-                </Text>
-                <Text fontSize="5xl" mb="10">
-                  {new BigNumber(activeLockQuery.data.balance)
-                    .shiftedBy(-ERC20_DECIMALS)
-                    .toFixed(2)}{' '}
-                  USD
-                </Text>
+            <Flex flexDir="column" alignItems="center">
+              <Text fontSize="lg" fontWeight="bold">
+                {activeLockQuery.data.isActive
+                  ? 'Active lock balance'
+                  : 'Inactive lock balance'}
+              </Text>
+              <Text fontSize="5xl" mb="10">
+                {new BigNumber(activeLockQuery.data.balance)
+                  .shiftedBy(-ERC20_DECIMALS)
+                  .toFixed(2)}{' '}
+                cUSD
+              </Text>
 
-                <ButtonGroup>
-                  <Button
-                    colorScheme="orange"
-                    onClick={withdrawDisclosure.onOpen}
+              {activeLockQuery.data.isActive ? (
+                <>
+                  <Flex flexWrap="wrap">
+                    <Button
+                      colorScheme="orange"
+                      onClick={withdrawDisclosure.onOpen}
+                      mr="5"
+                      mb="5"
+                    >
+                      Withdraw from lock
+                    </Button>
+                    <Button
+                      colorScheme="green"
+                      variant="outline"
+                      onClick={depositDisclosure.onOpen}
+                    >
+                      Deposit in lock
+                    </Button>
+                  </Flex>
+                  <Text
+                    mb="3"
+                    bg="gray.200"
+                    borderRadius="md"
+                    p="3"
+                    fontSize="sm"
                   >
-                    Withdraw from lock
-                  </Button>
-                  <Button
-                    colorScheme="green"
-                    variant="outline"
-                    onClick={depositDisclosure.onOpen}
+                    Coins are locked till{' '}
+                    <Text as="span" fontWeight="bold">
+                      {new Date(activeLockQuery.data.unlockDate).toString()}
+                    </Text>
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Flex flexWrap="wrap">
+                    <Button
+                      colorScheme="orange"
+                      onClick={withdrawDisclosure.onOpen}
+                      mr="5"
+                      mb="5"
+                    >
+                      Withdraw from lock
+                    </Button>
+                    <Button onClick={newLockDisclosure.onOpen} cursor="pointer">
+                      Create coin lock
+                    </Button>
+                  </Flex>
+                  <Text
+                    mb="3"
+                    bg="gray.200"
+                    borderRadius="md"
+                    p="3"
+                    fontSize="sm"
                   >
-                    Deposit in lock
-                  </Button>
-                </ButtonGroup>
-              </Flex>
-            ) : (
-              <Flex flexDir="column">
-                <Text mb="5" padding="3" border="1px" borderColor="gray.300">
-                  You don't currently have an active lock
-                </Text>
-                <Button onClick={newLockDisclosure.onOpen} cursor="pointer">
-                  Create coin lock
-                </Button>
-              </Flex>
-            )}
+                    Note that you need to have an active lock to qualify for the
+                    lottery
+                  </Text>
+                </>
+              )}
+            </Flex>
           </Flex>
         ) : null}
 
         <NewLockModal
           register={newLockForm.register}
-          onSubmit={newLockForm.handleSubmit(onSubmit)}
+          onSubmit={newLockForm.handleSubmit(onNewLock)}
           isOpen={newLockDisclosure.isOpen}
           onClose={newLockDisclosure.onClose}
         />
