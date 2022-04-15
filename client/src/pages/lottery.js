@@ -10,6 +10,8 @@ import {
 import BigNumber from 'bignumber.js';
 import { useQuery, useQueryClient } from 'react-query';
 import Header from '../components/header';
+import LotteryDetails from '../components/lottery-details';
+import LotteryWinner from '../components/lottery-winner';
 import { ERC20_DECIMALS } from '../constants';
 
 const Lottery = ({ data, cUSDBalance }) => {
@@ -24,10 +26,6 @@ const Lottery = ({ data, cUSDBalance }) => {
   // };
   const lotteryPotQuery = useQuery('lotteryPot', async () => {
     const result = await contract.methods.getPot().call();
-    console.log(
-      '🚀 ~ file: lottery.js ~ line 19 ~ lotteryPotQuery ~ result',
-      result
-    );
 
     result.lastLotteryDate = new Date(Number(result.lastLotteryDate) * 1000);
     result.nextRunDate = new Date(result.lastLotteryDate);
@@ -40,29 +38,51 @@ const Lottery = ({ data, cUSDBalance }) => {
     return result;
   });
 
-  //   const lotteryWinnersQuery = useQuery('lotteryWinners', async () => {
-  //     const [addresses, amounts, timestamps] = await contract.methods.getLotteryWinners().call();
+  const lotteryWinnersQuery = useQuery('lotteryWinners', async () => {
+    const { addresses, amounts, timestamps } = await contract.methods
+      .getLotteryWinners()
+      .call();
 
-  //       const results = [];
+    const winners = [
+      //   {
+      //     address: '0x276539Fa1Eb16D44d622F2e0Ca25eeA172369bC1',
+      //     amount: '100',
+      //     timestamp: new Date(),
+      //   },
+      //   {
+      //     address: '0x898725Fa1Eb16D44d622F2e0Ca25eeA172369bC2',
+      //     amount: '100',
+      //     timestamp: new Date(),
+      //   },
+      //   {
+      //     address: '0x87406abcd3e16D44d622F2e0Ca25eeA172369bC3',
+      //     amount: '100',
+      //     timestamp: new Date(),
+      //   },
+    ];
 
-  //       for (let i = 0; i < addresses.length; i++) {
-  //           const winner = {};
+    for (let i = 0; i < addresses.length; i++) {
+      const winner = {};
 
-  //           winner.address = addresss[i];
-  //           winner.amount = amounts[i];
-  //           winner.timestamp = timestamps[i];
+      // ignore empty winner entries
+      if (timestamps[i] == 0) continue;
 
-  //       }
+      winner.address = addresses[i];
+      winner.amount = amounts[i];
+      winner.timestamp = timestamps[i];
 
-  //     return result;
-  //   });
+      winners.push(winner);
+    }
+
+    return winners;
+  });
 
   return (
     <>
       <Header balance={cUSDBalance} />
 
       <Box padding="4">
-        <Text fontSize="2xl" fontWeight="medium">
+        <Text fontSize="xl" fontWeight="medium">
           Lottery
         </Text>
 
@@ -79,65 +99,41 @@ const Lottery = ({ data, cUSDBalance }) => {
         ) : null}
 
         {lotteryPotQuery.status === 'success' ? (
-          <Flex mt="10" justifyContent="center" mx="5">
-            <Flex flexDir="column" alignItems="center">
-              <Text fontSize="xl" fontWeight="medium" mb="3">
-                Pot balance
-              </Text>
+          <LotteryDetails data={lotteryPotQuery.data} onRunLottery={() => {}} />
+        ) : null}
 
-              <Text
-                fontSize="5xl"
-                mb="10"
-                border="2px"
-                py="3"
-                px="10"
-                borderColor="black"
-                color="green.400"
-              >
-                $
-                {new BigNumber(lotteryPotQuery.data.balance)
-                  .shiftedBy(-ERC20_DECIMALS)
-                  .toFixed(2)}{' '}
-              </Text>
+        {lotteryWinnersQuery.status === 'loading' ? (
+          <Center>
+            <Spinner thickness="4px" size="xl" />
+          </Center>
+        ) : null}
 
-              <Button
-                colorScheme="green"
-                disabled={lotteryPotQuery.data.dueForNextRun}
-                onClick={() => {}}
-                mr="5"
-                mb="5"
-              >
-                Run lottery
-              </Button>
+        {lotteryWinnersQuery.status === 'error' ? (
+          <Center>
+            <Text>Unable to fetch lottery pot</Text>
+          </Center>
+        ) : null}
 
-              <VStack
-                spacing="2"
-                mb="3"
-                bg="gray.200"
-                borderRadius="md"
-                p="3"
-                textAlign="left"
-              >
-                <Text fontSize="sm" w="full" textAlign="center">
-                  Lottery runs every 7 days
-                </Text>
+        {lotteryWinnersQuery.status === 'success' ? (
+          <>
+            <Text fontWeight="medium" mb="3" mt="5">
+              Past winners
+            </Text>
 
-                <Text fontSize="sm" w="full">
-                  Last run date:{' '}
-                  <Text as="span" fontWeight="medium">
-                    {lotteryPotQuery.data.lastLotteryDate.toString()}
-                  </Text>
-                </Text>
+            <VStack border="1px" borderBottom="none" mx="5">
+              {lotteryWinnersQuery.data.map(winner => (
+                <LotteryWinner
+                  address={winner.address}
+                  amount={winner.amount}
+                  timestamp={winner.timestamp}
+                />
+              ))}
 
-                <Text fontSize="sm" w="full">
-                  Next run date:{' '}
-                  <Text as="span" fontWeight="medium">
-                    {lotteryPotQuery.data.nextRunDate.toString()}
-                  </Text>
-                </Text>
-              </VStack>
-            </Flex>
-          </Flex>
+              {lotteryWinnersQuery.data.length === 0 ? (
+                <Text py="3">No winners yet</Text>
+              ) : null}
+            </VStack>
+          </>
         ) : null}
       </Box>
     </>

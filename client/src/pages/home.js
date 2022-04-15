@@ -167,7 +167,7 @@ const Home = ({ data, cUSDBalance }) => {
       <Header balance={cUSDBalance} />
 
       <Box padding="4">
-        <Text fontSize="2xl" fontWeight="medium">
+        <Text fontSize="xl" fontWeight="medium">
           Home
         </Text>
 
