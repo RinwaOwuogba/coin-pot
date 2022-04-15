@@ -131,7 +131,7 @@ contract CoinPot {
 		}
 
 		require(
-			token.transferFrom(address(this), msg.sender, amount),
+			token.transfer(msg.sender, amount),
 			"Transfer failed"
 		);
 	}

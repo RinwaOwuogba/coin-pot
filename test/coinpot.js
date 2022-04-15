@@ -82,13 +82,14 @@ contract("CoinPot", async (accounts) => {
           };
 
           assert.deepInclude(got, want);
-          // const unlockDate = new Date(got[3] * 1000);
-          // const expectedUnlockDate = addDays(new Date(), days);
-          // assert.equal(
-          //   true,
-          //   isSameDay(unlockDate, expectedUnlockDate),
-          //   `expected unlock day ${expectedUnlockDate.toISOString()}, got ${unlockDate.toISOString()}`
-          // );
+
+          const unlockDate = new Date(got[3] * 1000);
+          const expectedUnlockDate = addDays(new Date(), days);
+          assert.equal(
+            true,
+            isSameDay(unlockDate, expectedUnlockDate),
+            `expected unlock day ${expectedUnlockDate.toISOString()}, got ${unlockDate.toISOString()}`
+          );
         });
       });
     });
@@ -123,7 +124,7 @@ contract("CoinPot", async (accounts) => {
     });
   });
 
-  describe("func: withdrawFromLock", () => {
+  describe.only("func: withdrawFromLock", () => {
     beforeEach(async () => {
       coinPotInstance = await CoinPot.new(mock.address);
       await mock.givenAnyReturnBool(true);
@@ -192,14 +193,15 @@ contract("CoinPot", async (accounts) => {
 
       const percentageTax = 0.05; // 5%
       const expectedPotAmount = withdrawAmount * percentageTax;
-      const expectedUserBalance = shiftedAmount(depositAmount)
-        .minus(shiftedAmount(withdrawAmount).toFixed())
-        .minus(shiftedAmount(withdrawAmount * percentageTax).toFixed());
-
       assertPotBalance(
         pot.balance.toString(),
         shiftedAmount(expectedPotAmount).toFixed()
       );
+
+      const expectedUserBalance = shiftedAmount(depositAmount)
+        .minus(shiftedAmount(withdrawAmount).toFixed())
+        .minus(shiftedAmount(withdrawAmount * percentageTax).toFixed());
+
       assertBalance(
         senderLock.balance.toString(),
         expectedUserBalance.toFixed()
@@ -443,7 +445,7 @@ const assertSuccessfulTransferOnWithdraw = async (
 ) => {
   // withdraw from lock
   const transferFromContract = token.contract.methods
-    .transferFrom(coinPotInstance.address, from, withdrawAmount)
+    .transfer(from, withdrawAmount)
     .encodeABI();
 
   await mock.givenCalldataReturnBool(transferFromContract, true);
