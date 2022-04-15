@@ -18,6 +18,7 @@ const errors = {
   insufficientBalance: "balance must be greater than amount",
   insufficientBalanceWithTax: "balance must be greater than amount plus tax",
   lockNotFound: "sender does not have active lock",
+  invalidDate: "cannot run lottery before next lottery date",
 };
 
 const ERC20_DECIMALS = 18;
@@ -38,13 +39,13 @@ contract("CoinPot", async (accounts) => {
   describe("func: newLock", () => {
     before(async () => {
       mock = await MockContract.new();
-      coinPotInstance = await CoinPot.new(mock.address);
+      coinPotInstance = await CoinPot.new(mock.address, 0);
     });
 
     describe("should create a new lock and retrieve it", () => {
       before(async () => {
         mock = await MockContract.new();
-        coinPotInstance = await CoinPot.new(mock.address);
+        coinPotInstance = await CoinPot.new(mock.address, 0);
       });
       const cases = [
         {
@@ -126,7 +127,7 @@ contract("CoinPot", async (accounts) => {
 
   describe("func: withdrawFromLock", () => {
     beforeEach(async () => {
-      coinPotInstance = await CoinPot.new(mock.address);
+      coinPotInstance = await CoinPot.new(mock.address, 0);
       await mock.givenAnyReturnBool(true);
     });
 
@@ -271,7 +272,7 @@ contract("CoinPot", async (accounts) => {
 
   describe("func: depositInLock", () => {
     beforeEach(async () => {
-      coinPotInstance = await CoinPot.new(mock.address);
+      coinPotInstance = await CoinPot.new(mock.address, 0);
       await mock.givenAnyReturnBool(true);
     });
 
@@ -323,7 +324,7 @@ contract("CoinPot", async (accounts) => {
 
   describe("func: runLottery", () => {
     beforeEach(async () => {
-      coinPotInstance = await CoinPot.new(mock.address);
+      coinPotInstance = await CoinPot.new(mock.address, 0);
       await mock.givenAnyReturnBool(true);
     });
 
@@ -332,7 +333,7 @@ contract("CoinPot", async (accounts) => {
       const noOfUsers = 5;
 
       for await (const _ of new Array(noOfUsers)) {
-        coinPotInstance = await CoinPot.new(mock.address);
+        coinPotInstance = await CoinPot.new(mock.address, 0);
 
         const users = [...accounts.slice(0, noOfUsers)];
         const depositAmount = 100;
@@ -373,6 +374,30 @@ contract("CoinPot", async (accounts) => {
       const uniqueWinners = new Set(winners);
       if (uniqueWinners.size === 1)
         assert.fail("expected different winners but only got one");
+    });
+
+    it("should fail to run lottery before next lottery date", async () => {
+      const noOfUsers = 5;
+      const daysBetweenLottery = 7;
+
+      coinPotInstance = await CoinPot.new(mock.address, daysBetweenLottery);
+
+      const users = [...accounts.slice(0, noOfUsers)];
+      const depositAmount = 100;
+      const days = 100;
+      const withdrawAmount = depositAmount / 2;
+
+      // create active locks for small group of users
+      // and make early withdraws to create pot donations
+      for await (const from of users) {
+        await coinPotInstance.newLock(depositAmount, days, {
+          from,
+        });
+
+        await coinPotInstance.withdrawFromLock(withdrawAmount, { from });
+      }
+
+      await expectRevert(coinPotInstance.runLottery(), errors.invalidDate);
     });
   });
 });

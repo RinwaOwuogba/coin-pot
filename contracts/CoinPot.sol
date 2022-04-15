@@ -7,7 +7,7 @@ import "./IERC20Token.sol";
 struct Pot {
 	uint256 balance;
 	uint256 lastLotteryDate;
-	uint16 daysBetweenLottery;
+	uint256 daysBetweenLottery;
 	uint256 percentageTax;
 }
 
@@ -33,10 +33,10 @@ contract CoinPot {
 	mapping(address => Lock) internal coinLocks;
 	address[] owners;
 
-	constructor(address tokenAddress) public {
+	constructor(address tokenAddress, uint256 _daysBetweenLottery) public {
 		cUSDTokenAddress = tokenAddress;
 		token = IERC20Token(tokenAddress);
-		pot = Pot(0, block.timestamp, 7, 5);
+		pot = Pot(0, block.timestamp, _daysBetweenLottery, 5);
 	}
 
 	function addLockOwner(address ownerAddress) internal {
@@ -51,7 +51,7 @@ contract CoinPot {
 		returns (
 			uint256 balance,
 			uint256 lastLotteryDate,
-			uint16 daysBetweenLottery,
+			uint256 daysBetweenLottery,
 			uint256 percentageTax
 		)
 	{
@@ -142,6 +142,12 @@ contract CoinPot {
 	}
 
 	function runLottery() public {
+		require(
+			block.timestamp >=
+				(pot.lastLotteryDate + pot.daysBetweenLottery * 1 days),
+			"cannot run lottery before next lottery date"
+		);
+
 		address[] memory possibleWinners = new address[](owners.length);
 		uint256 noOfPossibleWinners;
 
@@ -165,6 +171,9 @@ contract CoinPot {
 		pot.balance = 0;
 	}
 
+	/**
+	Get last 5 lottery winners
+	*/
 	function getLotteryWinners()
 		public
 		view
