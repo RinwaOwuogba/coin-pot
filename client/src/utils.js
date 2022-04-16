@@ -1,5 +1,4 @@
 import { CPContractAddress, cUSDContractAddress } from './constants';
-import coinpot from './contracts/CoinPot.json';
 import erc20 from './contracts/IERC20Token.json';
 
 export const approve = async (kit, price) => {

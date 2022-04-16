@@ -2,20 +2,10 @@ import {
   Button,
   Flex,
   Text,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useDisclosure,
-  Input,
-  VStack,
   Spinner,
   Center,
   Box,
-  ButtonGroup,
 } from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import { approve } from '../utils';
