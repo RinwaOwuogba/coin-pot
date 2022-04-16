@@ -34,12 +34,6 @@ const Home = ({ data, cUSDBalance }) => {
 
   const queryClient = useQueryClient();
   const activeLockQuery = useQuery('activeLock', async () => {
-    // return {
-    //   // isActive: true,
-    //   isActive: false,
-    //   balance: 100000000000000000,
-    //   unlockDate: new Date(),
-    // };
     const result = await contract.methods.getActiveLock().call();
 
     result.unlockDate = new Date(Number(result.unlockDate) * 1000);

@@ -3,7 +3,13 @@ import BigNumber from 'bignumber.js';
 import { ERC20_DECIMALS } from '../constants';
 
 const LotteryDetails = ({ data, onRunLottery, isLoading }) => {
-  const { balance, dueForNextRun, lastLotteryDate, nextRunDate } = data;
+  const {
+    balance,
+    dueForNextRun,
+    lastLotteryDate,
+    nextRunDate,
+    daysBetweenLottery,
+  } = data;
 
   return (
     <Flex mt="10" justifyContent="center" mx="5">
@@ -44,7 +50,7 @@ const LotteryDetails = ({ data, onRunLottery, isLoading }) => {
           textAlign="left"
         >
           <Text fontSize="sm" w="full" textAlign="center">
-            Lottery runs every 7 days
+            Lottery runs every {daysBetweenLottery} days
           </Text>
 
           <Text fontSize="sm" w="full">
