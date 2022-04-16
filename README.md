@@ -27,7 +27,7 @@ This is a very simple savings dapp with a twist, where users can:
 
 ### **Test**
 
-#### **Automated Tests**
+#### **Automated Contract Tests**
 
 ```
 cd coin-pot
@@ -36,7 +36,7 @@ truffle test
 
 #### **Manual Testing**
 
-1. Create a lock with an amount.
+1. Create a lock with an amount and a specified number of days.
 2. Check that lock balance increases.
 3. Deposit into a lock.
 4. Check that lock balance increases.
