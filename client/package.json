@@ -1,7 +1,8 @@
 {
   "name": "client",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "homepage": "https://rinwaowuogba.github.io/coin-pot",
   "dependencies": {
     "@celo/contractkit": "^1.0.2",
     "@chakra-ui/react": "^1.8.8",
@@ -13,6 +14,7 @@
     "@testing-library/user-event": "^12.8.3",
     "bignumber.js": "^9.0.1",
     "framer-motion": "^4.1.17",
+    "gh-pages": "^3.2.3",
     "react": "^17.0.2",
     "react-blockies": "^1.4.1",
     "react-dom": "^17.0.2",
@@ -25,6 +27,8 @@
     "web3": "^1.7.1"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

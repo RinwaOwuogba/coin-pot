@@ -14,7 +14,7 @@ This is a very simple savings dapp with a twist, where users can:
 
 ## **Live Demo**
 
-[CoinPot Dapp](https://rinwaowuogba.github.io/coin-pot/)
+[CoinPot Dapp](https://rinwaowuogba.github.io/coin-pot)
 
 ## **Usage**
 
