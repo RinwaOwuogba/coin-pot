@@ -27,6 +27,7 @@ import Header from '../components/header';
 import NewLockModal from '../components/new-lock-modal';
 import WithdrawModal from '../components/withdraw-modal';
 import DepositModal from '../components/deposit-modal';
+import AsyncContent from '../components/async-content';
 
 const Home = ({ data, cUSDBalance }) => {
   const { contract, kit } = data;
@@ -171,89 +172,93 @@ const Home = ({ data, cUSDBalance }) => {
           Home
         </Text>
 
-        {activeLockQuery.status === 'loading' ? (
-          <Center>
-            <Spinner thickness="4px" size="xl" />
-          </Center>
-        ) : null}
+        <AsyncContent
+          status={activeLockQuery.status}
+          onLoading={() => (
+            <Center>
+              <Spinner thickness="4px" size="xl" />
+            </Center>
+          )}
+          onError={() => (
+            <Center>
+              <Text>Unable to fetch user lock</Text>
+            </Center>
+          )}
+          onSuccess={() => (
+            <Flex mt="10" justifyContent="center" mx="5">
+              <Flex flexDir="column" alignItems="center">
+                <Text fontSize="lg" fontWeight="bold">
+                  {activeLockQuery.data.isActive
+                    ? 'Active lock balance'
+                    : 'Inactive lock balance'}
+                </Text>
+                <Text fontSize="5xl" mb="10">
+                  $
+                  {new BigNumber(activeLockQuery.data.balance)
+                    .shiftedBy(-ERC20_DECIMALS)
+                    .toFixed(2)}{' '}
+                </Text>
 
-        {activeLockQuery.status === 'error' ? (
-          <Center>
-            <Text>Unable to fetch user lock</Text>
-          </Center>
-        ) : null}
-
-        {activeLockQuery.status === 'success' ? (
-          <Flex mt="10" justifyContent="center" mx="5">
-            <Flex flexDir="column" alignItems="center">
-              <Text fontSize="lg" fontWeight="bold">
-                {activeLockQuery.data.isActive
-                  ? 'Active lock balance'
-                  : 'Inactive lock balance'}
-              </Text>
-              <Text fontSize="5xl" mb="10">
-                $
-                {new BigNumber(activeLockQuery.data.balance)
-                  .shiftedBy(-ERC20_DECIMALS)
-                  .toFixed(2)}{' '}
-              </Text>
-
-              {activeLockQuery.data.isActive ? (
-                <>
-                  <Flex flexWrap="wrap" mb="3">
-                    <Button
-                      colorScheme="orange"
-                      onClick={withdrawDisclosure.onOpen}
-                      mr="5"
-                      mb="5"
-                    >
-                      Withdraw from lock
-                    </Button>
-                    <Button
-                      colorScheme="green"
-                      variant="outline"
-                      onClick={depositDisclosure.onOpen}
-                    >
-                      Deposit in lock
-                    </Button>
-                  </Flex>
-                  <Text bg="gray.200" borderRadius="md" p="3" fontSize="sm">
-                    Coins are locked till{' '}
-                    <Text as="span" fontWeight="bold">
-                      {new Date(activeLockQuery.data.unlockDate).toString()}
+                {activeLockQuery.data.isActive ? (
+                  <>
+                    <Flex flexWrap="wrap" mb="3">
+                      <Button
+                        colorScheme="orange"
+                        onClick={withdrawDisclosure.onOpen}
+                        mr="5"
+                        mb="5"
+                      >
+                        Withdraw from lock
+                      </Button>
+                      <Button
+                        colorScheme="green"
+                        variant="outline"
+                        onClick={depositDisclosure.onOpen}
+                      >
+                        Deposit in lock
+                      </Button>
+                    </Flex>
+                    <Text bg="gray.200" borderRadius="md" p="3" fontSize="sm">
+                      Coins are locked till{' '}
+                      <Text as="span" fontWeight="bold">
+                        {new Date(activeLockQuery.data.unlockDate).toString()}
+                      </Text>
                     </Text>
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Flex flexWrap="wrap" mb="3">
-                    <Button
-                      colorScheme="orange"
-                      onClick={withdrawDisclosure.onOpen}
-                      mr="5"
-                      mb="5"
+                  </>
+                ) : (
+                  <>
+                    <Flex flexWrap="wrap" mb="3">
+                      <Button
+                        colorScheme="orange"
+                        onClick={withdrawDisclosure.onOpen}
+                        mr="5"
+                        mb="5"
+                      >
+                        Withdraw from lock
+                      </Button>
+                      <Button
+                        onClick={newLockDisclosure.onOpen}
+                        cursor="pointer"
+                      >
+                        Create coin lock
+                      </Button>
+                    </Flex>
+                    <Text
+                      mb="3"
+                      bg="gray.200"
+                      borderRadius="md"
+                      p="3"
+                      fontSize="sm"
                     >
-                      Withdraw from lock
-                    </Button>
-                    <Button onClick={newLockDisclosure.onOpen} cursor="pointer">
-                      Create coin lock
-                    </Button>
-                  </Flex>
-                  <Text
-                    mb="3"
-                    bg="gray.200"
-                    borderRadius="md"
-                    p="3"
-                    fontSize="sm"
-                  >
-                    Note that you need to have an active lock to qualify for the
-                    lottery
-                  </Text>
-                </>
-              )}
+                      Note that you need to have an active lock to qualify for
+                      the lottery
+                    </Text>
+                  </>
+                )}
+              </Flex>
             </Flex>
-          </Flex>
-        ) : null}
+          )}
+        />
 
         <NewLockModal
           register={newLockForm.register}

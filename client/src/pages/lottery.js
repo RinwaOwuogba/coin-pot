@@ -1,6 +1,7 @@
 import { Box, Center, Spinner, Text, useToast, VStack } from '@chakra-ui/react';
 import BigNumber from 'bignumber.js';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
+import AsyncContent from '../components/async-content';
 import Header from '../components/header';
 import LotteryDetails from '../components/lottery-details';
 import LotteryWinner from '../components/lottery-winner';
@@ -90,59 +91,61 @@ const Lottery = ({ data, cUSDBalance }) => {
           Lottery
         </Text>
 
-        {lotteryPotQuery.status === 'loading' ? (
-          <Center>
-            <Spinner thickness="4px" size="xl" />
-          </Center>
-        ) : null}
+        <AsyncContent
+          status={lotteryPotQuery.status}
+          onLoading={() => (
+            <Center>
+              <Spinner thickness="4px" size="xl" />
+            </Center>
+          )}
+          onError={() => (
+            <Center>
+              <Text>Unable to fetch lottery pot</Text>
+            </Center>
+          )}
+          onSuccess={() => (
+            <LotteryDetails
+              data={lotteryPotQuery.data}
+              onRunLottery={runLotteryMutation.mutate}
+              isLoading={runLotteryMutation.isLoading}
+            />
+          )}
+        />
 
-        {lotteryPotQuery.status === 'error' ? (
-          <Center>
-            <Text>Unable to fetch lottery pot</Text>
-          </Center>
-        ) : null}
+        <AsyncContent
+          status={lotteryWinnersQuery.status}
+          onLoading={() => (
+            <Center>
+              <Spinner thickness="4px" size="xl" />
+            </Center>
+          )}
+          onError={() => (
+            <Center>
+              <Text>Unable to fetch lottery winners</Text>
+            </Center>
+          )}
+          onSuccess={() => (
+            <>
+              <Text fontWeight="medium" mb="3" mt="5">
+                Past winners
+              </Text>
 
-        {lotteryPotQuery.status === 'success' ? (
-          <LotteryDetails
-            data={lotteryPotQuery.data}
-            onRunLottery={runLotteryMutation.mutate}
-            isLoading={runLotteryMutation.isLoading}
-          />
-        ) : null}
+              <VStack border="1px" borderBottom="none" mx="5">
+                {lotteryWinnersQuery.data.map(winner => (
+                  <LotteryWinner
+                    address={winner.address}
+                    amount={winner.amount}
+                    timestamp={winner.timestamp}
+                  />
+                ))}
 
-        {lotteryWinnersQuery.status === 'loading' ? (
-          <Center>
-            <Spinner thickness="4px" size="xl" />
-          </Center>
-        ) : null}
-
-        {lotteryWinnersQuery.status === 'error' ? (
-          <Center>
-            <Text>Unable to fetch lottery pot</Text>
-          </Center>
-        ) : null}
-
-        {lotteryWinnersQuery.status === 'success' ? (
-          <>
-            <Text fontWeight="medium" mb="3" mt="5">
-              Past winners
-            </Text>
-
-            <VStack border="1px" borderBottom="none" mx="5">
-              {lotteryWinnersQuery.data.map(winner => (
-                <LotteryWinner
-                  address={winner.address}
-                  amount={winner.amount}
-                  timestamp={winner.timestamp}
-                />
-              ))}
-
-              {lotteryWinnersQuery.data.length === 0 ? (
-                <Text py="3">No winners yet</Text>
-              ) : null}
-            </VStack>
-          </>
-        ) : null}
+                {lotteryWinnersQuery.data.length === 0 ? (
+                  <Text py="3">No winners yet</Text>
+                ) : null}
+              </VStack>
+            </>
+          )}
+        />
       </Box>
     </>
   );
