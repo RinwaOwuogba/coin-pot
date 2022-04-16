@@ -40,7 +40,7 @@ const Lottery = ({ data, cUSDBalance }) => {
       const winner = {};
 
       // ignore empty winner entries
-      if (timestamps[i] == '0') continue;
+      if (timestamps[i] === '0') continue;
 
       winner.address = addresses[i];
       winner.amount = new BigNumber(amounts[i])
