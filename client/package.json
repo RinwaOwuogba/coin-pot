@@ -2,7 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": false,
-  "homepage": "https://rinwaowuogba.github.io/coin-pot",
+  "homepage": "https://rinwaowuogba.github.io/client/build",
   "dependencies": {
     "@celo/contractkit": "^1.0.2",
     "@chakra-ui/react": "^1.8.8",
@@ -28,7 +28,7 @@
   },
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "gh-pages -d build -e client",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
